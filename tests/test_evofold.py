@@ -7,11 +7,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 from agents.base import PHIGuard, AuditLogger, SecurityException
-from agents.models import TargetProtein, LigandCandidate, BindingPocket
+from agents.models import TargetProtein, LigandCandidate, BindingPocket, SystemTaskPayload, UrgencyLevel
 from agents.folding_worker import FoldingWorker
 from agents.docking_worker import DockingWorker
 from agents.admet_worker import ADMETWorker
-from agents.supervisor import DiscoverySupervisor
+from agents.supervisor import DiscoverySupervisor, SystemSupervisor
 from cli import main
 
 
@@ -71,3 +71,104 @@ def test_supervisor_and_cli():
     assert main(["screen", "--target", "BRAF"]) == 0
     assert main(["chat", "Explain", "docking", "scores"]) == 0
     assert main(["audit"]) == 0
+
+
+def test_audit_integrity_verification():
+    """Test that audit trail integrity verification works correctly."""
+    # Log some entries
+    AuditLogger.log("test_actor", "test", "TEST_EVENT", {"data": "test1"})
+    AuditLogger.log("test_actor", "test", "TEST_EVENT", {"data": "test2"})
+
+    # Verify integrity
+    assert AuditLogger.verify_integrity() is True
+
+
+def test_system_supervisor_routine():
+    """Test system supervisor classifies routine tasks correctly."""
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id="TEST-001",
+        target_identifier="TARGET-ROUTINE",
+        primary_metric=10.0,
+        secondary_metric=5.0,
+        status_descriptor="NOMINAL",
+        is_critical_flag=False
+    )
+    dossier = supervisor.process_task(payload)
+    assert dossier.overall_urgency == UrgencyLevel.ROUTINE
+    assert dossier.integrity_status == "VALIDATED_OPTIMAL"
+    assert dossier.audit_hash != ""
+
+
+def test_system_supervisor_elevated():
+    """Test system supervisor classifies elevated risk tasks correctly."""
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id="TEST-002",
+        target_identifier="TARGET-ELEVATED",
+        primary_metric=30.0,
+        secondary_metric=5.0,
+        status_descriptor="NOMINAL",
+        is_critical_flag=False
+    )
+    dossier = supervisor.process_task(payload)
+    assert dossier.overall_urgency == UrgencyLevel.ELEVATED_RISK
+
+
+def test_system_supervisor_critical():
+    """Test system supervisor classifies critical tasks correctly."""
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id="TEST-003",
+        target_identifier="TARGET-CRITICAL",
+        primary_metric=10.0,
+        secondary_metric=5.0,
+        status_descriptor="DISCORDANT_ANOMALY",
+        is_critical_flag=True
+    )
+    dossier = supervisor.process_task(payload)
+    assert dossier.overall_urgency == UrgencyLevel.CRITICAL_STAT_PANIC
+    # DISCORDANT_ANOMALY takes precedence in integrity determination
+    assert dossier.integrity_status in ("DISCORDANT_ANOMALY", "RECALIBRATION_REQUIRED")
+    assert len(dossier.alerts) > 0
+
+
+def test_system_task_payload_validation():
+    """Test SystemTaskPayload input validation."""
+    # Valid payload
+    payload = SystemTaskPayload(
+        task_id="VALID-001",
+        target_identifier="TARGET-VALID",
+        primary_metric=50.0,
+        secondary_metric=25.0
+    )
+    assert payload.task_id == "VALID-001"
+    assert payload.primary_metric == 50.0
+
+    # Test metric bounds
+    with pytest.raises(Exception):
+        SystemTaskPayload(
+            task_id="INVALID",
+            target_identifier="TARGET",
+            primary_metric=-1.0,  # Below minimum
+            secondary_metric=5.0
+        )
+
+    with pytest.raises(Exception):
+        SystemTaskPayload(
+            task_id="INVALID",
+            target_identifier="TARGET",
+            primary_metric=5.0,
+            secondary_metric=1001.0  # Above maximum
+        )
+
+
+def test_system_task_payload_whitespace_validation():
+    """Test that whitespace-only IDs are rejected."""
+    with pytest.raises(Exception):
+        SystemTaskPayload(
+            task_id="   ",
+            target_identifier="TARGET",
+            primary_metric=5.0,
+            secondary_metric=5.0
+        )

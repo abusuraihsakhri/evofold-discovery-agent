@@ -5,6 +5,8 @@ import json
 import time
 import hmac
 import hashlib
+import secrets
+import warnings
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
@@ -20,6 +22,10 @@ PHI_PATTERNS = [
 ]
 
 class SecurityException(Exception):
+    pass
+
+class SecurityWarning(UserWarning):
+    """Warning for security-related issues."""
     pass
 
 class ResourceLimitExceededException(Exception):
@@ -39,8 +45,26 @@ class PHIGuard:
 
 class AuditTrail:
     """Cryptographic Tamper-Evident HMAC-SHA256 Audit Trail."""
+
+    _DEFAULT_KEY_WARNING = False
+
     def __init__(self, secret_key: Optional[str] = None):
-        self.secret_key = (secret_key or os.getenv("AUDIT_SECRET_KEY", "evofold-discovery-master-audit-key-2026")).encode("utf-8")
+        env_key = os.getenv("AUDIT_SECRET_KEY")
+        if secret_key:
+            self.secret_key = secret_key.encode("utf-8")
+        elif env_key:
+            self.secret_key = env_key.encode("utf-8")
+        else:
+            # Generate a secure random key if none provided
+            if not AuditTrail._DEFAULT_KEY_WARNING:
+                warnings.warn(
+                    "AUDIT_SECRET_KEY not set. Using a randomly generated key. "
+                    "Set AUDIT_SECRET_KEY environment variable for persistent audit integrity.",
+                    SecurityWarning,
+                    stacklevel=2,
+                )
+                AuditTrail._DEFAULT_KEY_WARNING = True
+            self.secret_key = secrets.token_bytes(32)
         self.logs: List[Dict[str, Any]] = []
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
@@ -68,6 +92,25 @@ class AuditTrail:
     def get_trail(self) -> List[Dict[str, Any]]:
         return self.logs
 
+    def verify_integrity(self) -> bool:
+        """Verify the cryptographic integrity of the entire audit trail."""
+        if not self.logs:
+            return True
+
+        for i, entry in enumerate(self.logs):
+            # Verify chain linkage
+            expected_prev = self.logs[i - 1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000"
+            if entry["prev_hash"] != expected_prev:
+                return False
+
+            # Recompute and verify signature
+            sign_string = f"{entry['audit_id']}|{entry['timestamp']}|{entry['actor']}|{entry['actor_tier']}|{entry['event_type']}|{entry['payload_hash']}|{entry['prev_hash']}"
+            expected_signature = hmac.new(self.secret_key, sign_string.encode("utf-8"), hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(entry["current_hash"], expected_signature):
+                return False
+
+        return True
+
 GLOBAL_AUDIT = AuditTrail()
 
 class AuditLogger:
@@ -78,6 +121,11 @@ class AuditLogger:
     @staticmethod
     def get_trail() -> List[Dict[str, Any]]:
         return GLOBAL_AUDIT.get_trail()
+
+    @staticmethod
+    def verify_integrity() -> bool:
+        """Verify the cryptographic integrity of the entire audit trail."""
+        return GLOBAL_AUDIT.verify_integrity()
 
 class ActionExecutor:
     @staticmethod

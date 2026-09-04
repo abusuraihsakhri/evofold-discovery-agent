@@ -3,7 +3,8 @@ Data models for EvoFold Molecular Discovery.
 """
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from enum import Enum
 
 
 class TargetProtein(BaseModel):
@@ -78,3 +79,45 @@ class DiscoveryDossier(BaseModel):
 
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
+
+
+class UrgencyLevel(str, Enum):
+    ROUTINE = "ROUTINE"
+    ELEVATED_RISK = "ELEVATED_RISK"
+    CRITICAL_STAT_PANIC = "CRITICAL_STAT_PANIC"
+
+
+class SystemTaskPayload(BaseModel):
+    """Payload for system-level task processing."""
+    task_id: str = Field(..., min_length=1, max_length=100)
+    target_identifier: str = Field(..., min_length=1, max_length=200)
+    primary_metric: float = Field(..., ge=0.0, le=1000.0)
+    secondary_metric: float = Field(..., ge=0.0, le=1000.0)
+    status_descriptor: str = Field(default="NOMINAL", max_length=50)
+    is_critical_flag: bool = False
+
+    @field_validator("task_id")
+    @classmethod
+    def validate_task_id(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("task_id cannot be empty or whitespace")
+        return v.strip()
+
+    @field_validator("target_identifier")
+    @classmethod
+    def validate_target_identifier(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("target_identifier cannot be empty or whitespace")
+        return v.strip()
+
+
+class SystemDossier(BaseModel):
+    """Result dossier from system-level task processing."""
+    dossier_id: str
+    task_id: str
+    target_identifier: str
+    overall_urgency: UrgencyLevel
+    integrity_status: str
+    alerts: List[Dict[str, Any]] = Field(default_factory=list)
+    audit_hash: str
+    processed_at: str
