@@ -90,7 +90,7 @@ class AuditTrail:
         return entry
 
     def get_trail(self) -> List[Dict[str, Any]]:
-        return self.logs
+        return [entry.copy() for entry in self.logs]
 
     def verify_integrity(self) -> bool:
         """Verify the cryptographic integrity of the entire audit trail."""

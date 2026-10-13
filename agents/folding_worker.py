@@ -1,5 +1,5 @@
 """
-Folding Worker generating Invariant Point Attention (IPA) 3D backbone coordinates.
+Deterministic illustrative C-alpha helix generator; not a protein folding predictor.
 """
 import math
 from typing import List
@@ -7,7 +7,7 @@ from .models import TargetProtein, Residue3DCoordinate
 
 
 class FoldingWorker:
-    """Computes SE(3)-equivariant alpha-carbon 3D backbone coordinates for proteins."""
+    """Generates fixed helical C-alpha coordinates, independent of sequence chemistry."""
 
     @classmethod
     def fold_backbone(cls, target: TargetProtein) -> List[Residue3DCoordinate]:
