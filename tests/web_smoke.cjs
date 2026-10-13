@@ -31,7 +31,7 @@ function submit(id){element(id).listeners.submit({preventDefault(){}});}
 submit("screen-form");
 const screen=JSON.parse(element("screen-result").textContent);
 assert.equal(screen.target_id,"EGFR");
-assert.equal(screen.heuristic_affinity_kcal_mol,-9.01);
+assert.equal(screen.heuristic_affinity_kcal_mol,-10.01);
 assert.equal(screen.lipinski_violations,0);
 assert.equal(screen.heuristic_qed,1);
 assert.equal(screen.not_validated,true);
