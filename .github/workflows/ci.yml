@@ -35,6 +35,24 @@ jobs:
         run: |
           python -m pip install pip-audit
           pip-audit --progress-spinner off
+      - name: Container build and API smoke
+        if: matrix.python-version == '3.12'
+        run: |
+          docker build -t evofold-discovery-agent:ci .
+          docker run -d --name evofold-smoke -p 127.0.0.1:8765:8000 evofold-discovery-agent:ci
+          trap 'docker rm -f evofold-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/health > /tmp/evofold-health.json; then
+              grep -q HEALTHY /tmp/evofold-health.json
+              curl -fsS http://127.0.0.1:8765/ | grep -q 'Screening sandbox'
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              docker logs evofold-smoke
+              exit 1
+            fi
+            sleep 2
+          done
       - name: Distribution build
         run: |
           python -m pip install build
