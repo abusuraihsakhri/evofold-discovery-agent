@@ -27,3 +27,26 @@ jobs:
           path: web
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify published HTTP content
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          import urllib.request
+
+          url = os.environ["SITE_URL"]
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(url, timeout=12) as response:
+                      html = response.read().decode("utf-8")
+                      if response.status != 200 or "Screening sandbox" not in html:
+                          raise RuntimeError("Page is reachable but content is incorrect")
+                  print("Verified public page:", url)
+                  break
+              except Exception:
+                  if attempt == 11:
+                      raise
+                  time.sleep(5)
+          PY
