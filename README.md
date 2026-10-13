@@ -1,5 +1,7 @@
 # EvoFold Discovery Agent
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/evofold-discovery-agent/)
+
 A reproducible **demonstration** of molecular-descriptor screening and system-task triage. The source code is authoritative: it uses simple numerical rules rather than pretrained protein-folding models, physical docking software, or validated ADMET/QED predictors.
 
 ## Features
@@ -16,7 +18,7 @@ A reproducible **demonstration** of molecular-descriptor screening and system-ta
 
 Open `web/index.html` in a modern browser. All computations and JSON exports are local to the page; no data is uploaded. This browser interface uses JavaScript implementations of the basic deterministic rules and does not execute Python via WebAssembly or Pyodide.
 
-The production GitHub Pages URL will be added only after deployment is verified.
+The browser demo is published on GitHub Pages at the link above. The repository's deployment workflow checks the public HTTP response and expected page content.
 
 ## Python setup
 
