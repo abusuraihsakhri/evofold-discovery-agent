@@ -44,7 +44,8 @@ jobs:
           for attempt in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:8765/health > /tmp/evofold-health.json; then
               grep -q HEALTHY /tmp/evofold-health.json
-              curl -fsS http://127.0.0.1:8765/ | grep -q 'Screening sandbox'
+              curl -fsS http://127.0.0.1:8765/ > /tmp/evofold-page.html
+              grep -q 'Screening sandbox' /tmp/evofold-page.html
               break
             fi
             if [ "$attempt" -eq 20 ]; then
