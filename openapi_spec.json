@@ -1,112 +1,86 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Evofold Discovery Engine API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
-    "version": "3.0.0-ENTERPRISE",
-    "contact": {
-      "name": "Dr. Abu Suraih Sakhri",
-      "url": "https://github.com/abusuraihsakhri"
-    }
+    "title": "EvoFold Discovery Agent API",
+    "version": "2.1.0",
+    "description": "Deterministic, unvalidated screening heuristics and system task classification"
   },
   "paths": {
-    "/health": {
+    "/": {
       "get": {
-        "summary": "Health and metadata check",
+        "summary": "Static screening demonstration",
         "responses": {
           "200": {
-            "description": "System optimal"
+            "description": "HTML interface"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "responses": {
+          "200": {
+            "description": "JSON status"
           }
         }
       }
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "In-memory JSON counters",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "JSON metrics"
+          }
+        }
+      }
+    },
+    "/api/screen": {
+      "post": {
+        "summary": "Screen molecular descriptors",
+        "responses": {
+          "200": {
+            "description": "Heuristic dossier"
+          },
+          "422": {
+            "description": "Invalid inputs"
           }
         }
       }
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "task_id": {
-                    "type": "string"
-                  },
-                  "target_identifier": {
-                    "type": "string"
-                  },
-                  "primary_metric": {
-                    "type": "number"
-                  },
-                  "secondary_metric": {
-                    "type": "number"
-                  },
-                  "status_descriptor": {
-                    "type": "string"
-                  },
-                  "is_critical_flag": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "task_id",
-                  "target_identifier",
-                  "primary_metric"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Classify system task",
         "responses": {
           "200": {
-            "description": "Consensus dossier with HMAC signature"
+            "description": "Rule-based system dossier"
+          },
+          "422": {
+            "description": "Invalid inputs"
           }
         }
       }
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "query"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Local mock chat",
         "responses": {
           "200": {
-            "description": "Supervisory response"
+            "description": "Mock output"
+          },
+          "400": {
+            "description": "Blocked input"
           }
         }
       }
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "In-memory audit chain",
         "responses": {
           "200": {
-            "description": "Cryptographic audit trail"
+            "description": "Audit ledger and integrity"
           }
         }
       }
