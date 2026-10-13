@@ -12,7 +12,7 @@ def test_health_and_static_console():
     assert health.json()["status"] == "HEALTHY"
     page = client.get("/")
     assert page.status_code == 200
-    assert "Evofold" in page.text
+    assert "EvoFold" in page.text
 
 
 def test_screen_and_validation():
