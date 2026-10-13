@@ -94,21 +94,24 @@ class PredictiveAnalyticsEngine:
                 "type": ModelType.CLASSIFICATION,
                 "features": ["mw", "logp", "herg_liability", "cyp_inhibition", "hepatotoxicity_fp"],
                 "target": "toxicity_flag",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
             "clinical_success_predictor": {
                 "version": "1.0.0",
                 "type": ModelType.CLASSIFICATION,
                 "features": ["target_class", "indication", "phase", "novelty_score", "preclinical_data_quality"],
                 "target": "phase_transition_success",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
             "solubility_predictor": {
                 "version": "1.0.0",
                 "type": ModelType.REGRESSION,
                 "features": ["logp", "tpsa", "molecular_weight", "hbd_count"],
                 "target": "log_solubility",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
         }
 
