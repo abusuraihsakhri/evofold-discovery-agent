@@ -95,7 +95,7 @@ class MonitoringDashboard:
         """Generate an alert for a threshold breach."""
         self.alert_counter += 1
         if metric.threshold_max is not None and metric.value > metric.threshold_max:
-            severity = AlertSeverity.CRITICAL if metric.value > metric.threshold_max * 1.5 else AlertSeverity.WARNING
+            severity = AlertSeverity.CRITICAL if (metric.value - metric.threshold_max) > 0.5 * max(abs(metric.threshold_max), 1e-9) else AlertSeverity.WARNING
             msg = f"{metric.name} = {metric.value} exceeds max threshold {metric.threshold_max}"
             threshold = metric.threshold_max
         else:
@@ -181,6 +181,8 @@ class MonitoringDashboard:
 
     def get_metric_history(self, name: str, limit: int = 100) -> List[dict]:
         """Get historical values for a specific metric."""
+        if limit <= 0:
+            return []
         history = self.metrics_history.get(name, [])
         return [
             {"value": m.value, "unit": m.unit, "timestamp": m.timestamp, "breached": m.is_breached()}

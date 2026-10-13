@@ -7,7 +7,7 @@ from .base import PHIGuard
 class MockLLM:
     def invoke(self, prompt: str) -> str:
         PHIGuard.assert_no_phi(prompt)
-        return f"Deterministic medicinal chemistry analysis complete for prompt: '{prompt[:40]}...'. All binding affinities, ADMET parameters, and safety indices conform to lead optimization guidelines."
+        return f"Mock response only; no molecular inference performed. Query excerpt: '{prompt[:40]}...'"
 
 
 class LLMFactory:

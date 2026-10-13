@@ -1,6 +1,6 @@
 """
 Predictive Analytics Engine for EvoFold-Discovery-Agent.
-ML-based outcome prediction with model validation and clinical utility assessment.
+Heuristic outcome demonstration; no trained or clinically validated models.
 """
 
 from dataclasses import dataclass, field
@@ -86,28 +86,32 @@ class PredictiveAnalyticsEngine:
                 "type": ModelType.REGRESSION,
                 "features": ["molecular_weight", "logp", "hbd", "hba", "tpsa", "rotatable_bonds"],
                 "target": "binding_affinity_kcal_mol",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
             "admet_toxicity_classifier": {
                 "version": "1.0.0",
                 "type": ModelType.CLASSIFICATION,
                 "features": ["mw", "logp", "herg_liability", "cyp_inhibition", "hepatotoxicity_fp"],
                 "target": "toxicity_flag",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
             "clinical_success_predictor": {
                 "version": "1.0.0",
                 "type": ModelType.CLASSIFICATION,
                 "features": ["target_class", "indication", "phase", "novelty_score", "preclinical_data_quality"],
                 "target": "phase_transition_success",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
             "solubility_predictor": {
                 "version": "1.0.0",
                 "type": ModelType.REGRESSION,
                 "features": ["logp", "tpsa", "molecular_weight", "hbd_count"],
                 "target": "log_solubility",
-                "trained": True,
+                "trained": False,
+                "heuristic": True,
             },
         }
 
@@ -118,7 +122,7 @@ class PredictiveAnalyticsEngine:
         if not model:
             raise ValueError(f"Model '{model_name}' not found")
 
-        if not model.get("trained"):
+        if not model.get("trained") and not model.get("heuristic"):
             raise ValueError(f"Model '{model_name}' is not trained")
 
         # Simplified prediction logic (in production, use actual ML inference)
@@ -130,7 +134,7 @@ class PredictiveAnalyticsEngine:
             value = self._compute_regression_score(features, model_name)
             predicted = str(round(value, 3))
             confidence = min(abs(value) / 10.0, 1.0)
-            probability = 1.0 / (1.0 + math.exp(-value))  # sigmoid for consistency
+            probability = self._sigmoid(value)  # descriptive display scale only
 
         feature_importance = self._compute_feature_importance(features, model_name)
 
@@ -152,7 +156,15 @@ class PredictiveAnalyticsEngine:
         for feat in model["features"]:
             val = features.get(feat, 0.0)
             score += val * 0.1  # simplified weighting
-        return 1.0 / (1.0 + math.exp(-score))  # sigmoid
+        return self._sigmoid(score)
+
+    @staticmethod
+    def _sigmoid(value: float) -> float:
+        """Stable sigmoid for large-magnitude heuristic inputs."""
+        if value >= 0:
+            return 1.0 / (1.0 + math.exp(-value))
+        e = math.exp(value)
+        return e / (1.0 + e)
 
     def _compute_regression_score(self, features: dict, model_name: str) -> float:
         """Simplified regression scoring."""
@@ -170,64 +182,22 @@ class PredictiveAnalyticsEngine:
         return {f: round(abs(features.get(f, 0)) / total, 4) for f in model["features"]}
 
     def validate_model(self, model_name: str, validation_data: List[dict]) -> ModelPerformance:
-        """Validate a model against held-out data."""
-        model = self.models.get(model_name)
-        if not model:
+        """Fail closed rather than generate fabricated cross-validation statistics."""
+        if model_name not in self.models:
             raise ValueError(f"Model '{model_name}' not found")
-
-        # Simplified validation metrics
-        n = len(validation_data)
-        accuracy = 0.85 + (hash(model_name) % 100) / 1000.0
-        precision = accuracy * 0.95
-        recall = accuracy * 0.90
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-
-        performance = ModelPerformance(
-            model_name=model_name,
-            model_type=model["type"],
-            accuracy=round(min(accuracy, 0.99), 4),
-            precision=round(min(precision, 0.99), 4),
-            recall=round(min(recall, 0.99), 4),
-            f1_score=round(min(f1, 0.99), 4),
-            auc_roc=round(min(accuracy + 0.03, 0.99), 4),
-            calibration_slope=round(0.9 + (hash(model_name) % 20) / 200.0, 3),
-            brier_score=round(0.1 + (hash(model_name) % 50) / 500.0, 4),
-            validation_status=ValidationStatus.VALIDATED if accuracy > 0.8 else ValidationStatus.FAILED,
-            training_samples=n * 4,
-            validation_samples=n,
+        raise NotImplementedError(
+            "These are rule-based heuristics, not fitted models. "
+            "Validation requires labeled held-out data and implemented statistical metrics."
         )
-
-        if model_name not in self.performance_history:
-            self.performance_history[model_name] = []
-        self.performance_history[model_name].append(performance)
-        return performance
 
     def assess_clinical_utility(self, model_name: str,
                                 threshold_range: Tuple[float, float] = (0.01, 0.99)) -> ClinicalUtilityAssessment:
-        """Assess clinical utility using decision curve analysis."""
-        # Simplified DCA
-        thresholds = [threshold_range[0] + i * (threshold_range[1] - threshold_range[0]) / 50
-                      for i in range(51)]
-        dca_data = []
-        max_nb = 0.0
-        for t in thresholds:
-            # Net benefit = TP_rate - FP_rate * (threshold / (1 - threshold))
-            tp_rate = 0.7 * (1 - t)  # simplified
-            fp_rate = 0.2 * t
-            nb = tp_rate - fp_rate * (t / (1 - t)) if t < 1.0 else 0
-            dca_data.append((round(t, 3), round(nb, 4)))
-            max_nb = max(max_nb, nb)
-
-        nns = int(1.0 / max_nb) if max_nb > 0 else 999
-
-        return ClinicalUtilityAssessment(
-            model_name=model_name,
-            net_benefit=round(max_nb, 4),
-            decision_curve_data=dca_data,
-            number_needed_to_screen=nns,
-            harm_to_benefit_ratio=round(0.15, 3),
-            clinical_recommendation="Model provides net benefit across clinically relevant thresholds"
-            if max_nb > 0.1 else "Model utility limited; consider additional features",
+        """Avoid reporting fictitious decision curves or clinical net benefit."""
+        if model_name not in self.models:
+            raise ValueError(f"Model '{model_name}' not found")
+        raise NotImplementedError(
+            "Clinical utility cannot be estimated without outcomes, calibrated risk "
+            "predictions, and a valid decision-curve analysis."
         )
 
     def get_prediction_summary(self) -> dict:

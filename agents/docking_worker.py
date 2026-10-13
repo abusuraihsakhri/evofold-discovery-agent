@@ -1,5 +1,5 @@
 """
-Molecular Docking Worker executing AutoDock Vina scoring potentials.
+Illustrative descriptor-based docking-score surrogate; does not execute AutoDock Vina.
 """
 import math
 from typing import List
@@ -7,7 +7,7 @@ from .models import TargetProtein, LigandCandidate, BindingPocket, DockingScore,
 
 
 class DockingWorker:
-    """Calculates binding affinity energies and contact interactions between ligand and pocket."""
+    """Returns a deterministic score derived from descriptors, not a physical docking simulation."""
 
     @classmethod
     def dock(

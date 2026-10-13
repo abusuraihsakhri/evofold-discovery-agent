@@ -1,189 +1,77 @@
-# Evofold Discovery Agent
+# EvoFold Discovery Agent
 
-> **Domain:** Clinical Decision Support & Biomedical Computing
-> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+A reproducible **demonstration** of molecular-descriptor screening and system-task triage. The source code is authoritative: it uses simple numerical rules rather than pretrained protein-folding models, physical docking software, or validated ADMET/QED predictors.
 
-<div align="center">
+## Features
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+- Deterministic alpha-carbon helix coordinates from input sequence length (illustrative geometry, **not predicted structure**).
+- Descriptor-based affinity surrogate, Lipinski and Veber rule checks, simplified BBB/CYP flags, and a heuristic drug-likeness score.
+- Molecular dossier CLI and FastAPI endpoints, plus a rule-based task classifier.
+- HMAC-SHA256 chained in-memory audit ledger and a pattern-based identifier guard.
+- Self-contained browser sandbox in `web/index.html` with JSON export; no Python, backend, or external models required.
 
-</div>
+**Scientific limitations:** The surrogate docking score does not evaluate a protein pocket or ligand pose. Its numeric value is **not an experimentally meaningful binding energy**. The heuristic labeled QED is not the published QED algorithm. SMILES is a label, not a parsed molecule. Escalation thresholds have no established clinical units or validation. Outputs must not inform clinical care, medicinal chemistry decisions, or safety evaluation.
 
----
+## Browser demo
 
-## 📖 What It Does
+Open `web/index.html` in a modern browser. All computations and JSON exports are local to the page; no data is uploaded. This browser interface uses JavaScript implementations of the basic deterministic rules and does not execute Python via WebAssembly or Pyodide.
 
-**Evofold Discovery Agent** is an advanced analytical and computational platform implementing Invariant Point Attention (IPA) SE(3)-equivariant 3D backbone folding, AutoDock Vina scoring potentials, Lipinski/Veber/QED ADMET filters, medicinal chemistry supervisor. (12/12 tests passing).
+The production GitHub Pages URL will be added only after deployment is verified.
 
----
+## Python setup
 
-## ⚙️ Key Capabilities & Algorithmic Modules
+Requires Python 3.10 or newer.
 
-- **Deterministic Calculation Engine**: Strict compliance with standard reference formulations and thresholds.
-- **Risk & Urgency Classification**: Multi-tier categorization with automated clinical/operational action recommendations.
-- **Validation & Guardrails**: Rigorous input bounds checking and anomaly detection.
-- **Protein Folding Worker**: SE(3)-equivariant alpha-carbon 3D backbone coordinate generation.
-- **Molecular Docking Worker**: AutoDock Vina scoring potential estimation.
-- **ADMET Prediction Worker**: Lipinski Rule of 5, Veber criteria, BBB permeability, QED scoring.
-- **System Supervisor**: Task processing with urgency classification (ROUTINE, ELEVATED_RISK, CRITICAL_STAT_PANIC).
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Guided Interactive Mode
 ```bash
-python cli.py
-```
-
-### 2. Direct Parameterized Evaluation
-```bash
-python cli.py screen --target <value> --sequence <value> --ligand <value> --smiles <value>
-```
-
-### 3. Chat with the Medicinal Chemistry Supervisor
-```bash
-python cli.py chat "Explain docking scores"
-```
-
-### 4. View HMAC Audit Trail
-```bash
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python cli.py screen
+python cli.py screen --target KRAS --sequence MTEYKLVVVG --ligand EXAMPLE --smiles CCO --mw 46.07 --logp -0.3 --tpsa 20.2
+python cli.py chat "Explain the mock workflow"
 python cli.py audit
-```
-
-### 5. Launch FastAPI REST Server
-```bash
 python cli.py serve --host 127.0.0.1 --port 8000
 ```
 
-### Parameter Reference
-- `--target`: Specifies input measurement or parameter value.
-- `--sequence`: Specifies input measurement or parameter value.
-- `--ligand`: Specifies input measurement or parameter value.
-- `--smiles`: Specifies input measurement or parameter value.
-- `--mw`: Specifies input measurement or parameter value.
-- `--logp`: Specifies input measurement or parameter value.
-- `--tpsa`: Specifies input measurement or parameter value.
+The CLI requires a subcommand; run `python cli.py --help` for options. The `chat` command is a deterministic placeholder, not a live language-model integration. The `audit` command shows entries written **within that process only**.
 
-### Input Data Schema
+When serving, open `http://127.0.0.1:8000/` for the standalone browser demo and `http://127.0.0.1:8000/docs` for interactive API documentation.
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `suite_name` | Parameter / observation metric | Required |
-| `system_slug` | Parameter / observation metric | Required |
-| `standard_reference` | Parameter / observation metric | Required |
-| `test_cases` | Parameter / observation metric | Required |
+## API
 
----
+| Endpoint | Description |
+| --- | --- |
+| `GET /` | Static browser sandbox |
+| `GET /health` | Service health |
+| `GET /metrics` | In-memory JSON counters (not Prometheus text) |
+| `POST /api/screen` | Demonstrative molecular screening |
+| `POST /api/audit` | Rule-based task classification |
+| `POST /api/chat` | Local mock response |
+| `GET /api/audit/logs` | Current-process HMAC chain and integrity status |
 
-## 🛡️ Security & Enterprise Architecture
+The API is not authenticated and should **not** be exposed directly to untrusted networks. FastAPI provides request validation and OpenAPI documentation automatically.
 
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
-### Security Configuration
-
-Set the `AUDIT_SECRET_KEY` environment variable for persistent audit integrity across restarts:
+## Container
 
 ```bash
-# Linux/macOS
-export AUDIT_SECRET_KEY="your-secure-random-key"
-
-# Windows
-set AUDIT_SECRET_KEY=your-secure-random-key
+docker compose up --build
 ```
 
-If not set, a secure random key will be generated (with a warning).
+Compose binds only to `127.0.0.1:8000` on the host. To use a stable HMAC signing key across process restarts, export `AUDIT_SECRET_KEY` in the shell before starting. Without it, a random in-memory key is created. **Audit entries are not persisted** across restarts, regardless of whether the key is stable.
 
----
+## Privacy and security
 
-## 🧪 Testing & Verification
+Browser inputs remain in browser memory unless explicitly exported. In Python, request fields are processed in memory and some identifier values can be included in API responses. The regex-based guard checks certain common patterns but **does not guarantee PHI detection or anonymization**. Do not submit patient-identifiable or other sensitive data. Do not treat audit logging as a durable, compliance-grade audit system.
 
-Run the automated test suite:
+## Quality checks
 
 ```bash
-pytest -v
+python -m pytest -q
+python -m compileall -q agents cli.py enrichment.py simulator.py
+python simulator.py 100
 ```
 
-Execute high-throughput batch simulation benchmarks:
+GitHub Actions tests Python 3.10–3.12. The browser app needs a modern JavaScript-enabled browser.
 
-```bash
-python simulator.py --tasks 1000 --concurrency 8
-```
+## License
 
----
-
-## 🐳 Container Deployment
-
-```bash
-docker build -t evofold-discovery-agent .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secure-key evofold-discovery-agent
-```
-
-Or using Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
----
-
-## 📁 Project Structure
-
-```
-evofold-discovery-agent/
-├── agents/
-│   ├── __init__.py           # Package initialization
-│   ├── admet_worker.py       # ADMET prediction worker
-│   ├── api.py                # FastAPI REST server
-│   ├── base.py               # Security guards, HMAC audit trails
-│   ├── docking_worker.py     # Molecular docking worker
-│   ├── escalation_protocol.py # Automated escalation protocol
-│   ├── folding_worker.py     # Protein folding worker
-│   ├── learning.py           # Bayesian calibration engine
-│   ├── llm_factory.py        # LLM client factory
-│   ├── metrics.py            # Prometheus metrics collector
-│   ├── models.py             # Pydantic data models
-│   ├── monitoring_dashboard.py # Real-time monitoring dashboard
-│   ├── predictive_analytics.py # ML predictive analytics
-│   ├── streamer.py           # WebSocket telemetry streamer
-│   └── supervisor.py         # Discovery & System supervisors
-├── tests/
-│   ├── test_enrichment.py    # Enrichment module tests
-│   └── test_evofold.py       # Core functionality tests
-├── web/
-│   └── index.html            # Operations console UI
-├── .github/workflows/ci.yml  # CI/CD pipeline
-├── benchmark_dataset.json    # Golden benchmark test suite
-├── cli.py                    # Command-line interface
-├── docker-compose.yml        # Docker Compose configuration
-├── Dockerfile                # Docker build configuration
-├── enrichment.py             # Enrichment feature implementations
-├── openapi_spec.json         # OpenAPI 3.1 specification
-├── README.md                 # This file
-└── simulator.py              # High-throughput simulation
-```
-
----
-
-## 🔧 Dependencies
-
-- Python 3.10+
-- FastAPI
-- Uvicorn
-- Pydantic
-- pytest (for testing)
-
----
-
-## 📄 License
-
-MIT License
+No license file is currently present in the repository; no specific reuse license is asserted.

@@ -8,9 +8,9 @@ from enum import Enum
 
 
 class TargetProtein(BaseModel):
-    target_id: str
-    protein_name: str
-    amino_acid_sequence: str
+    target_id: str = Field(..., min_length=1, max_length=200)
+    protein_name: str = Field(..., min_length=1, max_length=200)
+    amino_acid_sequence: str = Field(..., min_length=1, max_length=5000)
     organism: str = "Homo sapiens"
 
 
@@ -25,21 +25,21 @@ class Residue3DCoordinate(BaseModel):
 
 class BindingPocket(BaseModel):
     pocket_id: str
-    center_x: float
-    center_y: float
-    center_z: float
-    radius_angstrom: float = 10.0
+    center_x: float = Field(..., allow_inf_nan=False)
+    center_y: float = Field(..., allow_inf_nan=False)
+    center_z: float = Field(..., allow_inf_nan=False)
+    radius_angstrom: float = Field(default=10.0, gt=0, le=1000, allow_inf_nan=False)
 
 
 class LigandCandidate(BaseModel):
-    ligand_id: str
-    smiles: str
-    molecular_weight: float
-    logp: float
-    tpsa: float
-    hbd_count: int = 2
-    hba_count: int = 4
-    rotatable_bonds: int = 4
+    ligand_id: str = Field(..., min_length=1, max_length=200)
+    smiles: str = Field(..., min_length=1, max_length=4096)
+    molecular_weight: float = Field(..., gt=0, le=100000, allow_inf_nan=False)
+    logp: float = Field(..., ge=-100, le=100, allow_inf_nan=False)
+    tpsa: float = Field(..., ge=0, le=10000, allow_inf_nan=False)
+    hbd_count: int = Field(default=2, ge=0, le=1000)
+    hba_count: int = Field(default=4, ge=0, le=1000)
+    rotatable_bonds: int = Field(default=4, ge=0, le=1000)
 
 
 class DockingScore(BaseModel):
@@ -91,8 +91,8 @@ class SystemTaskPayload(BaseModel):
     """Payload for system-level task processing."""
     task_id: str = Field(..., min_length=1, max_length=100)
     target_identifier: str = Field(..., min_length=1, max_length=200)
-    primary_metric: float = Field(..., ge=0.0, le=1000.0)
-    secondary_metric: float = Field(..., ge=0.0, le=1000.0)
+    primary_metric: float = Field(..., ge=0.0, le=1000.0, allow_inf_nan=False)
+    secondary_metric: float = Field(..., ge=0.0, le=1000.0, allow_inf_nan=False)
     status_descriptor: str = Field(default="NOMINAL", max_length=50)
     is_critical_flag: bool = False
 
